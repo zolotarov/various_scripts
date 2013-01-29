@@ -62,6 +62,36 @@ xml_peptide = """
 </Query>
 """.replace("\n", "")
 
+xml_go_description = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Query>
+<Query  virtualSchemaName = "zome_mart" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
+    		
+	<Dataset name = "phytozome" interface = "default" >
+		<Filter name = "organism_id" value = "%s"/>
+		<Attribute name = "gene_name1" />
+		<Attribute name = "transcript_name1" />
+		<Attribute name = "go_id" />
+		<Attribute name = "go_desc" />
+	</Dataset>
+</Query>
+""".replace("\n", "")
+
+xml_pfam_description = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Query>
+<Query  virtualSchemaName = "zome_mart" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
+    		
+	<Dataset name = "phytozome" interface = "default" >
+		<Filter name = "organism_id" value = "%s"/>
+		<Attribute name = "gene_name1" />
+		<Attribute name = "transcript_name1" />
+		<Attribute name = "pfam_id" />
+		<Attribute name = "pfam_desc" />
+	</Dataset>
+</Query>
+""".replace("\n", "")
+
 url = "http://www.phytozome.net/biomart/martservice"
 
 # check available filters and attributes at following address
@@ -94,12 +124,12 @@ def download_sequences(kind):
             mart = PhytozomeMart(xml_peptide, url, item.value)
             mart_output.write(mart.send_query())
     elif kind == "custom":
-        custom_list = ['aquco', 'glyma']
+        custom_list = ['araly', 'arath', 'bradi', 'carpa', 'chlre' , 'glyma', 'linus', 'maldo', 'manes', 'medtr', 'orysa', 'phypa', 'poptr', 'selmo', 'sorbi', 'vitvi', 'volca', 'zeama']
         custom_values = [[item.shorthand, item.value]
                          for item in list_of_species if item.shorthand in custom_list]
         for value in custom_values:
-            mart_output = open('%s_prom_1K.fas' % value[0], 'w')
-            mart = PhytozomeMart(xml_promoter, url, value[1])
+            mart_output = open('%s_pfam.fas' % value[0], 'w')
+            mart = PhytozomeMart(xml_pfam_description, url, value[1])
             mart_output.write(mart.send_query())
 
 download_sequences("custom")  # choose either promoters, peptides or custom
