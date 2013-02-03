@@ -30,7 +30,7 @@ Species_info = namedtuple('Species_info', 'species_name shorthand value')
 # a list of all available species on Phytozome v9.0
 list_of_species = [Species_info('Aquilegia coerulea', 'aquco', '195'), Species_info('Arabidopsis lyrata', 'araly', '107'), Species_info('Arabidopsis thaliana', 'arath', '167'), Species_info('Brachypodium distachyon', 'bradi', '192'), Species_info('Brassica rapa', 'brara', '197'), Species_info('Capsella rubella ', 'capru', '183'), Species_info('Carica papaya', 'carpa', '113'), Species_info('Chlamydomonas reinhardtii', 'chlre', '236'), Species_info('Citrus clementina', 'citcl', '182'), Species_info('Citrus sinensis', 'citsi', '154'), Species_info('Coccomyxa subellipsoidea C-169', 'cocsu', '227'), Species_info('Cucumis sativus', 'cucsa', '122'), Species_info('Eucalyptus grandis', 'eucgr', '201'), Species_info('Fragaria vesca', 'frave', '226'), Species_info('Glycine max', 'glyma', '189'), Species_info('Gossypium raimondii', 'gosra', '221'), Species_info('Linum usitatissimum', 'linus', '200'), Species_info('Malus domestica', 'maldo', '196'), Species_info('Manihot esculenta', 'manes', '147'), Species_info('Medicago truncatula', 'medtr', '198'), Species_info('Micromonas pusilla CCMP1545', 'micpu', '228'), Species_info('Micromonas pusilla RCC299', 'micpv', '229'), Species_info('Mimulus guttatus', 'mimgu', '140'), Species_info('Oryza sativa', 'orysa', '204'), Species_info('Ostreococcus lucimarinus', 'ostlu', '231'), Species_info('Panicum virgatum', 'panvi', '202'), Species_info('Phaseolus vulgaris', 'phavu', '218'), Species_info('Physcomitrella patens', 'phypa', '152'), Species_info('Populus trichocarpa', 'poptr', '210'), Species_info('Prunus persica', 'prupe', '139'), Species_info('Ricinius communis', 'ricco', '119'), Species_info('Selaginella moellendorffii', 'selmo', '91'), Species_info('Setaria italica', 'setit', '164'), Species_info('Solanum lycopersicum', 'solly', '225'), Species_info('Solanum tuberosum', 'soltu', '206'), Species_info('Sorghum bicolor', 'sorbi', '79'), Species_info('Thellungiella halophila', 'theha', '173'), Species_info('Theobroma cacao', 'theca', '233'), Species_info('Vitis vinifera', 'vitvi', '145'), Species_info('Volvox carteri', 'volca', '199'), Species_info('Zea mays', 'zeama', '181')]
 
-
+# 1K of promoter from gene start
 xml_promoter = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
@@ -42,6 +42,23 @@ xml_promoter = """
                 <Attribute name = "gene_name1" />
                 <Attribute name = "transcript_name1" />
                 <Attribute name = "coding_gene_flank" />
+                <Attribute name = "organism_name" />
+        </Dataset>
+</Query>
+""".replace("\n", "")
+
+# 1K of promoter from transcript start
+xml_promoter_transcript = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Query>
+<Query  virtualSchemaName = "zome_mart" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
+
+        <Dataset name = "phytozome" interface = "default" >
+                <Filter name = "upstream_flank" value = "1000"/>
+                <Filter name = "organism_id" value = "%s"/>
+                <Attribute name = "gene_name1" />
+                <Attribute name = "transcript_name1" />
+                <Attribute name = "coding_transcript_flank" />
                 <Attribute name = "organism_name" />
         </Dataset>
 </Query>
@@ -116,7 +133,7 @@ def download_sequences(kind):
     if kind == "promoters":
         for item in list_of_species:
             mart_output = open('%s_prom_1K.fas' % item.shorthand, 'w')
-            mart = PhytozomeMart(xml_promoter, url, item.value)
+            mart = PhytozomeMart(xml_promoter_transcript, url, item.value)
             mart_output.write(mart.send_query())
     elif kind == "peptides":
         for item in list_of_species:
@@ -132,4 +149,4 @@ def download_sequences(kind):
             mart = PhytozomeMart(xml_pfam_description, url, value[1])
             mart_output.write(mart.send_query())
 
-download_sequences("custom")  # choose either promoters, peptides or custom
+download_sequences("promoters")  # choose either promoters, peptides or custom
