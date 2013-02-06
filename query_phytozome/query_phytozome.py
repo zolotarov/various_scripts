@@ -4,8 +4,8 @@
 Original script: https://gist.github.com/384470#file-gistfile1-py
 
 This script queries the phytozome database
-In the current form, you can either obtain 1000 bp of the promoter sequences
-or peptide sequences
+In the current form, you can either obtain 1000 bp of the promoter sequences, peptide sequences,
+ontology data and promoters of specific genes
 
 To modify the script with other queries, go to http://www.phytozome.net/biomart/martview
 create a custom query and then click on XML, to get an example code
@@ -25,6 +25,7 @@ for value in custom_values:
 
 import urllib as U
 from collections import namedtuple
+
 Species_info = namedtuple('Species_info', 'species_name shorthand value')
 
 # a list of all available species on Phytozome v9.0
@@ -64,6 +65,7 @@ xml_promoter_transcript = """
 </Query>
 """.replace("\n", "")
 
+# download all peptides for a species
 xml_peptide = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
@@ -79,33 +81,66 @@ xml_peptide = """
 </Query>
 """.replace("\n", "")
 
+# download GO ontology for all genes in a species
 xml_go_description = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
 <Query  virtualSchemaName = "zome_mart" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
-    		
-	<Dataset name = "phytozome" interface = "default" >
-		<Filter name = "organism_id" value = "%s"/>
-		<Attribute name = "gene_name1" />
-		<Attribute name = "transcript_name1" />
-		<Attribute name = "go_id" />
-		<Attribute name = "go_desc" />
-	</Dataset>
+
+    <Dataset name = "phytozome" interface = "default" >
+        <Filter name = "organism_id" value = "%s"/>
+        <Attribute name = "gene_name1" />
+        <Attribute name = "transcript_name1" />
+        <Attribute name = "go_id" />
+        <Attribute name = "go_desc" />
+    </Dataset>
 </Query>
 """.replace("\n", "")
 
+# download PFAM ontology for all genes in a species
 xml_pfam_description = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
 <Query  virtualSchemaName = "zome_mart" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
-    		
-	<Dataset name = "phytozome" interface = "default" >
-		<Filter name = "organism_id" value = "%s"/>
-		<Attribute name = "gene_name1" />
-		<Attribute name = "transcript_name1" />
-		<Attribute name = "pfam_id" />
-		<Attribute name = "pfam_desc" />
-	</Dataset>
+
+    <Dataset name = "phytozome" interface = "default" >
+        <Filter name = "organism_id" value = "%s"/>
+        <Attribute name = "gene_name1" />
+        <Attribute name = "transcript_name1" />
+        <Attribute name = "pfam_id" />
+        <Attribute name = "pfam_desc" />
+    </Dataset>
+</Query>
+""".replace("\n", "")
+
+# download promoters from transcript start for a specific list of genes
+xml_promoter_genes = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Query>
+<Query  virtualSchemaName = "zome_mart" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
+
+    <Dataset name = "phytozome" interface = "default" >
+        <Filter name = "upstream_flank" value = "1000"/>
+        <Filter name = "gene_name_filter" value = "%s"/>
+        <Attribute name = "gene_name1" />
+        <Attribute name = "transcript_name1" />
+        <Attribute name = "coding_transcript_flank" />
+        <Attribute name = "organism_name" />
+    </Dataset>
+</Query>
+""".replace("\n", "")
+
+# download GO IDs for a specific list of transcripts
+xml_go_genes = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Query>
+<Query  virtualSchemaName = "zome_mart" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >
+
+    <Dataset name = "phytozome" interface = "default" >
+        <Filter name = "transcript_name_filter" value = "%s"/>
+        <Attribute name = "transcript_name1" />
+        <Attribute name = "go_id" />
+    </Dataset>
 </Query>
 """.replace("\n", "")
 
@@ -130,23 +165,59 @@ class PhytozomeMart(object):
 
 
 def download_sequences(kind):
-    if kind == "promoters":
+    if kind == "promoters":  # download promoters from gene start for all species
         for item in list_of_species:
             mart_output = open('%s_prom_1K.fas' % item.shorthand, 'w')
             mart = PhytozomeMart(xml_promoter_transcript, url, item.value)
             mart_output.write(mart.send_query())
-    elif kind == "peptides":
+    elif kind == "peptides":  # download peptides for all species
         for item in list_of_species:
             mart_output = open('%s_pep.fas' % item.shorthand, 'w')
             mart = PhytozomeMart(xml_peptide, url, item.value)
             mart_output.write(mart.send_query())
-    elif kind == "custom":
-        custom_list = ['araly', 'arath', 'bradi', 'carpa', 'chlre' , 'glyma', 'linus', 'maldo', 'manes', 'medtr', 'orysa', 'phypa', 'poptr', 'selmo', 'sorbi', 'vitvi', 'volca', 'zeama']
+    elif kind == "custom":  # used to dowloand either GO or PFAM for a list of species
+        custom_list = ['araly', 'arath', 'bradi', 'carpa', 'chlre', 'glyma', 'linus', 'maldo', 'manes', 'medtr', 'orysa', 'phypa', 'poptr', 'selmo', 'sorbi', 'vitvi', 'volca', 'zeama']
         custom_values = [[item.shorthand, item.value]
                          for item in list_of_species if item.shorthand in custom_list]
         for value in custom_values:
             mart_output = open('%s_pfam.fas' % value[0], 'w')
             mart = PhytozomeMart(xml_pfam_description, url, value[1])
             mart_output.write(mart.send_query())
+    elif kind == "go_genes":  # will output the list of GO IDs associated
+        from sys import argv
+        from subprocess import call
+        gene_list = list()
+        go_file_temp = str(argv[1]).split(".")[0] + "_go_temp.txt"
+        go_file = str(argv[1]).split(".")[0] + "_go.txt"
+        for line in open(argv[1], "r"):  # a list of gene names, with one gene per line
+            gene_list.append(line.strip())
+        values = ','.join(gene_list)
+        mart_output = open(go_file_temp, 'w')  # change the file name when using either xml_promoter_genes or xml_go_genes
+        mart = PhytozomeMart(xml_go_genes, url, values)  # or use xml_go_genes
+        mart_output.write(mart.send_query())
 
-download_sequences("promoters")  # choose either promoters, peptides or custom
+        all_lines = list()
+        for line in open(go_file_temp, "r"):
+            all_lines.append(line.strip())
+
+        unique_lines = set(all_lines)  # removes repeated transcript, GO ID pairs that Phytozome sends for some reason
+
+        with open(go_file, "w") as go_output_file:
+            for item in unique_lines:
+                item = item.split('\t')
+                if len(item) == 2:  # check if the transcript has a GO ID associated with it
+                    output_line = "GO:%s" % str(item[1].zfill(6)) + '\n'  # add item[0] + '\t' + before "GO:" if you want the transcript name included
+                    go_output_file.write(output_line)
+        call(["rm", go_file_temp])
+    elif kind == "promoter_genes":  # will download promoters from transcript start for selected genes
+        from sys import argv
+        gene_list = list()
+        promoters_file = str(argv[1]).split(".")[0] + "_prom.fas"
+        for line in open(argv[1], "r"):  # a list of gene names, with one gene per line
+            gene_list.append(line.strip())
+        values = ','.join(gene_list)
+        mart_output = open(promoters_file, 'w')
+        mart = PhytozomeMart(xml_promoter_genes, url, values)
+        mart_output.write(mart.send_query())
+
+download_sequences("promoter_genes")  # choose either promoters, peptides, go_genes, promoter_genes or custom
