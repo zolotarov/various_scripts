@@ -165,17 +165,17 @@ class PhytozomeMart(object):
 
 
 def download_sequences(kind):
-    if kind == "promoters":  # download promoters from gene start for all species
+    if kind == "promoters":
         for item in list_of_species:
             mart_output = open('%s_prom_1K.fas' % item.shorthand, 'w')
             mart = PhytozomeMart(xml_promoter_transcript, url, item.value)
             mart_output.write(mart.send_query())
-    elif kind == "peptides":  # download peptides for all species
+    elif kind == "peptides":
         for item in list_of_species:
             mart_output = open('%s_pep.fas' % item.shorthand, 'w')
             mart = PhytozomeMart(xml_peptide, url, item.value)
             mart_output.write(mart.send_query())
-    elif kind == "custom":  # used to dowloand either GO or PFAM for a list of species
+    elif kind == "custom":
         custom_list = ['araly', 'arath', 'bradi', 'carpa', 'chlre', 'glyma', 'linus', 'maldo', 'manes', 'medtr', 'orysa', 'phypa', 'poptr', 'selmo', 'sorbi', 'vitvi', 'volca', 'zeama']
         custom_values = [[item.shorthand, item.value]
                          for item in list_of_species if item.shorthand in custom_list]
@@ -183,41 +183,35 @@ def download_sequences(kind):
             mart_output = open('%s_pfam.fas' % value[0], 'w')
             mart = PhytozomeMart(xml_pfam_description, url, value[1])
             mart_output.write(mart.send_query())
-    elif kind == "go_genes":  # will output the list of GO IDs associated
+    elif kind == "genes":
         from sys import argv
         from subprocess import call
+
         gene_list = list()
         go_file_temp = str(argv[1]).split(".")[0] + "_go_temp.txt"
         go_file = str(argv[1]).split(".")[0] + "_go.txt"
         for line in open(argv[1], "r"):  # a list of gene names, with one gene per line
             gene_list.append(line.strip())
+
         values = ','.join(gene_list)
-        mart_output = open(go_file_temp, 'w')  # change the file name when using either xml_promoter_genes or xml_go_genes
-        mart = PhytozomeMart(xml_go_genes, url, values)  # or use xml_go_genes
-        mart_output.write(mart.send_query())
+        with open(go_file_temp, 'w') as mart_output:
+            mart = PhytozomeMart(
+                xml_go_genes, url, values)  # or use xml_go_genes
+            mart_output.write(mart.send_query())
 
         all_lines = list()
         for line in open(go_file_temp, "r"):
             all_lines.append(line.strip())
 
-        unique_lines = set(all_lines)  # removes repeated transcript, GO ID pairs that Phytozome sends for some reason
+        unique_lines = set(all_lines)
 
         with open(go_file, "w") as go_output_file:
             for item in unique_lines:
                 item = item.split('\t')
                 if len(item) == 2:  # check if the transcript has a GO ID associated with it
-                    output_line = "GO:%s" % str(item[1].zfill(6)) + '\n'  # add item[0] + '\t' + before "GO:" if you want the transcript name included
+                    output_line = "GO:%s" % str(item[1].zfill(6)) + '\n'
                     go_output_file.write(output_line)
         call(["rm", go_file_temp])
-    elif kind == "promoter_genes":  # will download promoters from transcript start for selected genes
-        from sys import argv
-        gene_list = list()
-        promoters_file = str(argv[1]).split(".")[0] + "_prom.fas"
-        for line in open(argv[1], "r"):  # a list of gene names, with one gene per line
-            gene_list.append(line.strip())
-        values = ','.join(gene_list)
-        mart_output = open(promoters_file, 'w')
-        mart = PhytozomeMart(xml_promoter_genes, url, values)
-        mart_output.write(mart.send_query())
 
-download_sequences("promoter_genes")  # choose either promoters, peptides, go_genes, promoter_genes or custom
+download_sequences(
+    "genes")  # choose either promoters, peptides, genes or custom
