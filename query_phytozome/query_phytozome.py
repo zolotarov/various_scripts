@@ -113,7 +113,7 @@ xml_pfam_description = """
 </Query>
 """.replace("\n", "")
 
-# download promoters from transcript start for a specific list of genes
+# download promoters from gene start for a specific list of genes
 xml_promoter_genes = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
@@ -124,7 +124,7 @@ xml_promoter_genes = """
         <Filter name = "gene_name_filter" value = "%s"/>
         <Attribute name = "gene_name1" />
         <Attribute name = "transcript_name1" />
-        <Attribute name = "coding_transcript_flank" />
+        <Attribute name = "coding_gene_flank" />
         <Attribute name = "organism_name" />
     </Dataset>
 </Query>
@@ -183,7 +183,7 @@ def download_sequences(kind):
             mart_output = open('%s_pfam.fas' % value[0], 'w')
             mart = PhytozomeMart(xml_pfam_description, url, value[1])
             mart_output.write(mart.send_query())
-    elif kind == "genes":
+    elif kind == "go_genes":
         from sys import argv
         from subprocess import call
 
@@ -212,6 +212,15 @@ def download_sequences(kind):
                     output_line = "GO:%s" % str(item[1].zfill(6)) + '\n'
                     go_output_file.write(output_line)
         call(["rm", go_file_temp])
+    elif kind == "gene_promoters":
+        from sys import argv
+        gene_list = ','.join([line.strip() for line in open(argv[1], "r")])
+        print gene_list
+        mart = PhytozomeMart(xml_promoter_genes, url, gene_list)
+        mart_out_filename = str(argv[1]).rsplit('.')[0] + "_promoters.fas"
+        mart_output = open(mart_out_filename, "w")
+        mart_output.write(mart.send_query())
+
 
 download_sequences(
-    "genes")  # choose either promoters, peptides, genes or custom
+    "gene_promoters")  # choose either promoters, peptides, genes or custom
