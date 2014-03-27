@@ -16,6 +16,9 @@ def hamming_distance(kmer1, kmer2): # from http://code.activestate.com/recipes/4
 	return sum(itertools.imap(operator.ne, kmer1, kmer2))
 
 def rev_comp(sequence):
+	"""return a reverse complement of a sequence
+		sequence:	a FASTA sequence in capitals without ambiguous nucleotides
+	"""
 	inseq =  "ACGT"
 	outseq = "TGCA"
 	sequence_unicode = u'%s' % sequence
@@ -24,6 +27,11 @@ def rev_comp(sequence):
 	return str(sequence_revcomp)
 
 def return_kmerred_sequences(file, reverese_complement = True):
+	"""take all sequences and convert them into list of lists of kmers
+
+	file:	the input filename
+	reverse_complement:	True or False, whether to find smalles HD in forward orientation or both
+	"""
 	all_seq = list()
 	with open(file, 'r') as input_file:
 		sequence = ''
