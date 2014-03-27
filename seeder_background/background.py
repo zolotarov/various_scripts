@@ -3,14 +3,23 @@
 # pypy background_8mer_set.py Athaliana_genome_cleanedup_utr.fasta  17691.98s user 0.46s system 99% cpu 4:55:05.55 total
 
 import itertools
-from sys import argv
+# from sys import argv
 import operator
+import argparse
 
-kmer_length = 8
+parser = argparse.ArgumentParser()
+parser.add_argument("-i", "--input", help = "input FASTA file", required=True)
+parser.add_argument("-o", "--output", help = "output background distribution", required=True)
+parser.add_argument("-l", "--length", help = "length of the kmer to analyze", default = '6', choices=['6','8'])
+parser.add_argument("-s", "--strand", help = "strands to analyze, both or just forward", default = "both", choices=['both','forward'])
+
+args = vars(parser.parse_args())
+strand = args["strand"]
+kmer_length = int(args["length"])
 
 all_kmers = [''.join(i) for i in itertools.product('ACGT', repeat = kmer_length)] #generate all kmers of the specified length
 
-output_file = open('test8_set.bkgd', 'w')
+output_file = open(args["output"], 'w')
 
 def hamming_distance(kmer1, kmer2): # from http://code.activestate.com/recipes/499304-hamming-distance/
 	return sum(itertools.imap(operator.ne, kmer1, kmer2))
@@ -26,7 +35,7 @@ def rev_comp(sequence):
 	sequence_revcomp = sequence_unicode.translate(translation_table)[::-1]
 	return str(sequence_revcomp)
 
-def return_kmerred_sequences(file, reverese_complement = True):
+def return_kmerred_sequences(file, strand):
 	"""take all sequences and convert them into list of lists of kmers
 
 	file:	the input filename
@@ -51,7 +60,7 @@ def return_kmerred_sequences(file, reverese_complement = True):
 	output_file.write('T\t%s\n' % joined.count('T'))
 	all_seq_reversed = [rev_comp(seq) for seq in all_seq]
 	all_sequences_kmerred = list()
-	if reverese_complement:
+	if strand == 'both':
 		for sequences in zip(all_seq, all_seq_reversed):
 			kmers_in_sequence = [sequences[0][i:i + kmer_length] for i in range(len(sequences[0]) - kmer_length + 1)]
 			kmers_in_sequence_rev = [sequences[1][i:i + kmer_length] for i in range(len(sequences[1]) - kmer_length + 1)]
@@ -76,10 +85,14 @@ def kmer_hd_dict(kmer):
 		hd_dict[key] = set(hd_dict[key])
 	return hd_dict
 
-all_sequences_kmerred = return_kmerred_sequences(argv[1], True)
+all_sequences_kmerred = return_kmerred_sequences(args["input"], strand)
 
 def counts(kmer):
-	counts_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0}
+	if kmer_length == 6:
+		counts_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
+	elif kmer_length == 8:
+		counts_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0}
+
 	kmer_hd = kmer_hd_dict(kmer)
 	for list_of_kmers in all_sequences_kmerred:
 		if kmer in list_of_kmers:
@@ -111,7 +124,7 @@ def counts(kmer):
 			continue
 	return counts_dict
 
-for k in all_kmers:
+for k in all_kmers[0:20]:
 	d = counts(k)
 	e = ' '.join((str(d[i]) for i in d))
 	output_file.write('%s\t%s\n' % (k, e))
