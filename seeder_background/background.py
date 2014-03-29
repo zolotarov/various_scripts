@@ -147,7 +147,7 @@ def counts(kmer):
             continue
     return counts_dict
 
-for k in all_kmers[0:20]:
+for k in all_kmers:
     d = counts(k)
     e = ' '.join((str(d[i]) for i in d))
     output_file.write('%s\t%s\n' % (k, e))
