@@ -118,6 +118,11 @@ def counts(kmer):
 
     kmer_hd = kmer_hd_dict(kmer)
     for list_of_kmers in all_sequences_kmerred:
+        # first check if the kmer is found within the sequence,
+        # if it's not check whether there's an intersection between a set
+        # containg x Hamming distance and the list of kmers, if there's
+        # indeed an intersection, then the count for that Hamming distance is
+        # incremented in the counts_dict dictionary
         if kmer in list_of_kmers:
             counts_dict[0] += 1
             continue
